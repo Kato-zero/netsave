@@ -46,3 +46,6 @@ app.post("/download", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+app.get("/", (req, res) => {
+  res.send("Tube Downloader Backend is running. Use POST /download to fetch video info.");
+});
