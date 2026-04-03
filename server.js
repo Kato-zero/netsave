@@ -1,99 +1,66 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 const { exec } = require("child_process");
 const fs = require("fs");
-const path = require("path");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-const PORT = 3000;
+/* Serve frontend */
 
-const downloadPath =
-path.join(__dirname, "downloads");
+app.use(express.static("public"));
 
-if (!fs.existsSync(downloadPath)) {
+/* Ensure downloads folder */
 
-fs.mkdirSync(downloadPath);
-
+if (!fs.existsSync("downloads")) {
+fs.mkdirSync("downloads");
 }
 
-app.use(
-"/downloads",
-express.static(downloadPath)
-);
+/* Fetch Video Info */
 
-app.use(
-express.static(
-path.join(__dirname, "public")
-)
-);
+app.post("/download", (req, res) => {
 
-/* Extract Video Info */
+const videoUrl = req.body.url;
 
-app.post("/download", async (req, res) => {
-
-const { url } = req.body;
-
-if (!url) {
-
-return res
-.status(400)
-.json({ error: "No URL" });
-
+if (!videoUrl) {
+return res.status(400).json({
+error: "No URL provided"
+});
 }
 
-try {
+const command =
+`yt-dlp -j "${videoUrl}"`;
 
-const cmd =
-`yt-dlp -J "${url}"`;
+exec(command, (error, stdout) => {
 
-exec(cmd, (err, stdout) => {
+if (error) {
 
-if (err) {
-
-return res
-.status(500)
-.json({
-error:
-"Failed to fetch video info"
+return res.status(500).json({
+error: "Failed to fetch video"
 });
 
 }
 
-const data =
+const info =
 JSON.parse(stdout);
-
-const title =
-data.title.replace(
-/[^a-z0-9]/gi,
-"_"
-);
 
 res.json({
 
-title,
+title: info.title,
 
 qualities: [
 
 {
-quality: "MP4 720p",
-url:
-`/download-video?url=${encodeURIComponent(url)}&format=mp4`
+quality: "🎬 MP4 720p",
+url: `/download-video?url=${encodeURIComponent(videoUrl)}&format=mp4`
 },
 
 {
-quality: "MP4 1080p",
-url:
-`/download-video?url=${encodeURIComponent(url)}&format=mp4-hd`
-},
-
-{
-quality: "MP3 Audio",
-url:
-`/download-video?url=${encodeURIComponent(url)}&format=mp3`
+quality: "🎵 MP3 Audio",
+url: `/download-video?url=${encodeURIComponent(videoUrl)}&format=mp3`
 }
 
 ]
@@ -102,93 +69,73 @@ url:
 
 });
 
-}
-
-catch {
-
-res
-.status(500)
-.json({
-error: "Server error"
 });
 
-}
+/* Download Video */
 
-});
+app.get("/download-video", (req, res) => {
 
-/* Download Route */
+const videoUrl = req.query.url;
+const format = req.query.format;
 
-app.get(
-"/download-video",
-(req, res) => {
+if (!videoUrl || !format) {
 
-const { url, format } = req.query;
-
-if (!url) {
-
-return res
-.status(400)
-.send("Missing URL");
+return res.status(400).send("Missing parameters");
 
 }
 
 const fileName =
 Date.now();
 
-let cmd;
+let command;
 
 if (format === "mp3") {
 
-cmd =
-`yt-dlp -x --audio-format mp3 -o "${downloadPath}/${fileName}.mp3" "${url}"`;
+command =
+`yt-dlp -x --audio-format mp3 -o downloads/${fileName}.mp3 "${videoUrl}"`;
+
+} else {
+
+command =
+`yt-dlp -f mp4 -o downloads/${fileName}.mp4 "${videoUrl}"`;
 
 }
 
-else if (
-format === "mp4-hd"
-) {
+exec(command, (error) => {
 
-cmd =
-`yt-dlp -f "bestvideo[height<=1080]+bestaudio/best[height<=1080]" -o "${downloadPath}/${fileName}.mp4" "${url}"`;
+if (error) {
 
-}
-
-else {
-
-cmd =
-`yt-dlp -f "best[height<=720]" -o "${downloadPath}/${fileName}.mp4" "${url}"`;
-
-}
-
-exec(cmd, (err) => {
-
-if (err) {
-
-return res
-.status(500)
-.send(
-"Download failed"
-);
+return res.status(500)
+.send("Download failed");
 
 }
 
 const filePath =
 path.join(
-downloadPath,
-`${fileName}.${format === "mp3" ? "mp3" : "mp4"}`
+__dirname,
+"downloads",
+`${fileName}.${format}`
 );
 
-res.download(filePath);
+res.download(filePath, () => {
+
+fs.unlinkSync(filePath);
 
 });
 
-}
-);
+});
+
+});
+
+/* Start server */
+
+const PORT =
+process.env.PORT || 3000;
 
 app.listen(PORT, () => {
 
 console.log(
-`🚀 Server running on http://localhost:${PORT}`
+`Server running on http://localhost:${PORT}`
 );
 
 });
