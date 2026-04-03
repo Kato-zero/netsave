@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Tube Download — YouTube Video & MP3 Downloader</title>
+
+<meta name="description"
+content="Download YouTube videos in MP4 or MP3 format using shared links. Fast, simple and mobile friendly.">
+
+<style>
+
+/* Reset */
+
+* {
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+/* Body */
+
+body {
+
+font-family: Arial, sans-serif;
+
+background:
+linear-gradient(135deg,#ff0000,#8b0000);
+
+color:white;
+
+min-height:100vh;
+
+display:flex;
+
+justify-content:center;
+
+align-items:center;
+
+padding:20px;
+
+}
+
+/* Container */
+
+.container {
+
+background:#111;
+
+padding:30px;
+
+border-radius:18px;
+
+width:100%;
+
+max-width:700px;
+
+box-shadow:
+0 10px 40px rgba(0,0,0,0.5);
+
+}
+
+/* Title */
+
+h1 {
+
+text-align:center;
+
+margin-bottom:10px;
+
+color:#ff4d4d;
+
+}
+
+.subtitle {
+
+text-align:center;
+
+color:#ccc;
+
+margin-bottom:25px;
+
+}
+
+/* Input */
+
+.input-wrapper {
+
+display:flex;
+
+gap:10px;
+
+background:#222;
+
+padding:6px;
+
+border-radius:50px;
+
+}
+
+input {
+
+flex:1;
+
+padding:14px 18px;
+
+border:none;
+
+border-radius:50px;
+
+font-size:15px;
+
+outline:none;
+
+background:transparent;
+
+color:white;
+
+}
+
+button {
+
+padding:14px 28px;
+
+border:none;
+
+border-radius:50px;
+
+background:red;
+
+color:white;
+
+font-weight:bold;
+
+cursor:pointer;
+
+transition:0.2s;
+
+}
+
+button:hover {
+
+background:#cc0000;
+
+}
+
+/* Loader */
+
+.loader {
+
+margin-top:20px;
+
+text-align:center;
+
+}
+
+.spinner {
+
+width:45px;
+
+height:45px;
+
+border:4px solid #333;
+
+border-top:4px solid red;
+
+border-radius:50%;
+
+animation:spin 1s linear infinite;
+
+margin:auto;
+
+}
+
+@keyframes spin {
+
+to { transform: rotate(360deg); }
+
+}
+
+/* Result */
+
+.result {
+
+margin-top:25px;
+
+}
+
+/* Thumbnail */
+
+.thumbnail {
+
+width:100%;
+
+border-radius:12px;
+
+margin-bottom:15px;
+
+}
+
+/* Video Title */
+
+.video-title {
+
+font-weight:bold;
+
+margin-bottom:15px;
+
+}
+
+/* Quality Buttons */
+
+.quality {
+
+display:block;
+
+background:white;
+
+color:black;
+
+padding:12px;
+
+border-radius:12px;
+
+margin-top:10px;
+
+text-decoration:none;
+
+font-weight:bold;
+
+transition:0.2s;
+
+}
+
+.quality:hover {
+
+background:#ddd;
+
+}
+
+/* Error */
+
+.error {
+
+background:#ffe5e5;
+
+color:#900;
+
+padding:15px;
+
+border-radius:12px;
+
+}
+
+/* Footer */
+
+.footer {
+
+margin-top:25px;
+
+text-align:center;
+
+font-size:12px;
+
+color:#aaa;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🎬 Tube Download</h1>
+
+<p class="subtitle">
+
+Download YouTube Videos in MP4 or MP3
+
+</p>
+
+<div class="input-wrapper">
+
+<input
+id="url"
+placeholder="Paste YouTube link here..."
+>
+
+<button onclick="fetchVideo()">
+
+Fetch
+
+</button>
+
+</div>
+
+<div id="loader"
+class="loader"
+style="display:none;">
+
+<div class="spinner"></div>
+
+<p>Fetching video info...</p>
+
+</div>
+
+<div id="result"
+class="result"></div>
+
+<div class="footer">
+
+Use responsibly. Download only videos you have permission to use.
+
+</div>
+
+</div>
+
+<script>
+
+/* Validate YouTube */
+
+function isYouTube(url){
+
+return /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/
+.test(url);
+
+}
+
+/* Fetch Video */
+
+async function fetchVideo(){
+
+const url =
+document.getElementById("url").value.trim();
+
+const loader =
+document.getElementById("loader");
+
+const result =
+document.getElementById("result");
+
+result.innerHTML="";
+
+if(!url){
+
+showError(
+"Paste a YouTube link"
+);
+
+return;
+
+}
+
+if(!isYouTube(url)){
+
+showError(
+"Only YouTube links allowed"
+);
+
+return;
+
+}
+
+/* Show Loader */
+
+loader.style.display="block";
+
+try{
+
+const res =
+await fetch("/download",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+url:url
+})
+
+});
+
+if(!res.ok){
+
+throw new Error();
+
+}
+
+const data =
+await res.json();
+
+/* Hide Loader */
+
+loader.style.display="none";
+
+/* Display Results */
+
+displayResults(data,url);
+
+}
+
+catch{
+
+loader.style.display="none";
+
+showError(
+"Server error or invalid video"
+);
+
+}
+
+}
+
+/* Show Results */
+
+function displayResults(data,url){
+
+const result =
+document.getElementById("result");
+
+/* Thumbnail */
+
+const videoId =
+extractVideoId(url);
+
+const thumbnail =
+`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+
+result.innerHTML=`
+
+<img
+src="${thumbnail}"
+class="thumbnail"
+>
+
+<div class="video-title">
+
+${data.title}
+
+</div>
+
+`;
+
+data.qualities
+.forEach(q=>{
+
+result.innerHTML +=
+
+`<a
+class="quality"
+href="${q.url}">
+
+${q.quality}
+
+</a>`;
+
+});
+
+}
+
+/* Extract Video ID */
+
+function extractVideoId(url){
+
+const regExp =
+/(?:youtube\.com.*(?:\\?|&)v=|youtu\.be\\/)([^&#\\n?]+)/;
+
+const match =
+url.match(regExp);
+
+return match ?
+match[1] :
+"";
+
+}
+
+/* Error */
+
+function showError(msg){
+
+const result =
+document.getElementById("result");
+
+result.innerHTML=`
+
+<div class="error">
+
+⚠️ ${msg}
+
+</div>
+
+`;
+
+}
+
+</script>
+
+</body>
+
+</html>
