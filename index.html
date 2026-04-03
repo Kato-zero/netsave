@@ -357,8 +357,11 @@ loader.style.display="block";
 
 try{
 
-const res =
-await fetch("https://netsave-production.up.railway.app/download",{
+const res = await fetch("https://netsave-production.up.railway.app/download", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ url })
+});
 
 method:"POST",
 
