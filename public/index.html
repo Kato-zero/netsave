@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Tube Download</title>
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1">
+
+<style>
+
+body {
+
+font-family: Arial;
+
+background:
+linear-gradient(135deg, red, darkred);
+
+color:white;
+
+text-align:center;
+
+padding:30px;
+
+}
+
+.container {
+
+background:black;
+
+padding:25px;
+
+border-radius:15px;
+
+max-width:600px;
+
+margin:auto;
+
+}
+
+input {
+
+width:100%;
+
+padding:15px;
+
+margin-top:10px;
+
+border-radius:10px;
+
+border:none;
+
+}
+
+button {
+
+margin-top:10px;
+
+padding:15px;
+
+border:none;
+
+border-radius:10px;
+
+background:red;
+
+color:white;
+
+font-size:16px;
+
+cursor:pointer;
+
+}
+
+.quality {
+
+display:block;
+
+background:white;
+
+color:black;
+
+padding:12px;
+
+margin-top:10px;
+
+border-radius:10px;
+
+text-decoration:none;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🎬 Tube Download</h1>
+
+<p>
+
+Paste YouTube link to download MP4 or MP3
+
+</p>
+
+<input
+id="url"
+placeholder="Paste YouTube link">
+
+<button onclick="process()">
+
+Fetch Video
+
+</button>
+
+<div id="result"></div>
+
+</div>
+
+<script>
+
+async function process(){
+
+const url =
+document.getElementById("url").value;
+
+const result =
+document.getElementById("result");
+
+result.innerHTML =
+"Fetching...";
+
+const res =
+await fetch("/download",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+url
+})
+
+});
+
+const data =
+await res.json();
+
+result.innerHTML =
+`<h3>${data.title}</h3>`;
+
+data.qualities
+.forEach(q=>{
+
+result.innerHTML +=
+
+`<a class="quality"
+href="${q.url}">
+${q.quality}
+</a>`;
+
+});
+
+}
+
+</script>
+
+</body>
+
+</html>
