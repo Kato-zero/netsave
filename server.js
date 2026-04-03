@@ -1,141 +1,48 @@
-const express = require("express");
-const cors = require("cors");
-const path = require("path");
-const { exec } = require("child_process");
-const fs = require("fs");
+import express from "express";
+import cors from "cors";
+import bodyParser from "body-parser";
+import { exec } from "child_process";
+import path from "path";
+import fs from "fs";
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json());
+app.use(bodyParser.json());
 
-/* Serve frontend */
+app.post("/download", async (req, res) => {
+  const { url } = req.body;
 
-app.use(express.static("public"));
+  if (!url) return res.status(400).json({ error: "URL required" });
 
-/* Ensure downloads folder */
+  try {
+    // Get video info
+    exec(
+      `yt-dlp -j "${url}"`,
+      (err, stdout) => {
+        if (err || !stdout) {
+          return res.status(500).json({ error: "Failed to fetch video info" });
+        }
 
-if (!fs.existsSync("downloads")) {
-fs.mkdirSync("downloads");
-}
+        const info = JSON.parse(stdout);
 
-/* Fetch Video Info */
+        // Filter MP4 and MP3 formats
+        const qualities = info.formats
+          .filter(f => f.ext === "mp4" || f.ext === "m4a" || f.ext === "webm")
+          .map(f => ({
+            quality: `${f.format_note || f.format_id} (${f.ext})`,
+            url: f.url
+          }));
 
-app.post("/download", (req, res) => {
-
-const videoUrl = req.body.url;
-
-if (!videoUrl) {
-return res.status(400).json({
-error: "No URL provided"
+        res.json({ title: info.title, qualities });
+      }
+    );
+  } catch (e) {
+    res.status(500).json({ error: "Server error" });
+  }
 });
-}
-
-const command =
-`yt-dlp -j "${videoUrl}"`;
-
-exec(command, (error, stdout) => {
-
-if (error) {
-
-return res.status(500).json({
-error: "Failed to fetch video"
-});
-
-}
-
-const info =
-JSON.parse(stdout);
-
-res.json({
-
-title: info.title,
-
-qualities: [
-
-{
-quality: "🎬 MP4 720p",
-url: `/download-video?url=${encodeURIComponent(videoUrl)}&format=mp4`
-},
-
-{
-quality: "🎵 MP3 Audio",
-url: `/download-video?url=${encodeURIComponent(videoUrl)}&format=mp3`
-}
-
-]
-
-});
-
-});
-
-});
-
-/* Download Video */
-
-app.get("/download-video", (req, res) => {
-
-const videoUrl = req.query.url;
-const format = req.query.format;
-
-if (!videoUrl || !format) {
-
-return res.status(400).send("Missing parameters");
-
-}
-
-const fileName =
-Date.now();
-
-let command;
-
-if (format === "mp3") {
-
-command =
-`yt-dlp -x --audio-format mp3 -o downloads/${fileName}.mp3 "${videoUrl}"`;
-
-} else {
-
-command =
-`yt-dlp -f mp4 -o downloads/${fileName}.mp4 "${videoUrl}"`;
-
-}
-
-exec(command, (error) => {
-
-if (error) {
-
-return res.status(500)
-.send("Download failed");
-
-}
-
-const filePath =
-path.join(
-__dirname,
-"downloads",
-`${fileName}.${format}`
-);
-
-res.download(filePath, () => {
-
-fs.unlinkSync(filePath);
-
-});
-
-});
-
-});
-
-/* Start server */
-
-const PORT =
-process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-
-console.log(
-`Server running on http://localhost:${PORT}`
-);
-
+  console.log(`Server running on port ${PORT}`);
 });
