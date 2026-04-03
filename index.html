@@ -11,7 +11,7 @@ content="width=device-width, initial-scale=1.0">
 <title>Tube Download — YouTube Video & MP3 Downloader</title>
 
 <meta name="description"
-content="Download YouTube videos in MP4 or MP3 format using shared links. Fast, simple and mobile friendly.">
+content="Download YouTube videos in MP4 or MP3 format using shared links.">
 
 <style>
 
@@ -64,8 +64,6 @@ box-shadow:
 0 10px 40px rgba(0,0,0,0.5);
 
 }
-
-/* Title */
 
 h1 {
 
@@ -191,8 +189,6 @@ margin-top:25px;
 
 }
 
-/* Thumbnail */
-
 .thumbnail {
 
 width:100%;
@@ -203,8 +199,6 @@ margin-bottom:15px;
 
 }
 
-/* Video Title */
-
 .video-title {
 
 font-weight:bold;
@@ -212,8 +206,6 @@ font-weight:bold;
 margin-bottom:15px;
 
 }
-
-/* Quality Buttons */
 
 .quality {
 
@@ -243,8 +235,6 @@ background:#ddd;
 
 }
 
-/* Error */
-
 .error {
 
 background:#ffe5e5;
@@ -256,8 +246,6 @@ padding:15px;
 border-radius:12px;
 
 }
-
-/* Footer */
 
 .footer {
 
@@ -351,20 +339,14 @@ result.innerHTML="";
 
 if(!url){
 
-showError(
-"Paste a YouTube link"
-);
-
+showError("Paste a YouTube link");
 return;
 
 }
 
 if(!isYouTube(url)){
 
-showError(
-"Only YouTube links allowed"
-);
-
+showError("Only YouTube links allowed");
 return;
 
 }
@@ -376,7 +358,7 @@ loader.style.display="block";
 try{
 
 const res =
-await fetch("netsave-production.up.railway.app/download"),{
+await fetch("https://netsave-production.up.railway.app/download",{
 
 method:"POST",
 
